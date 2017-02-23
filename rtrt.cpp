@@ -9,6 +9,12 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
+
+    QMessageBox messageAuthor;
+    messageAuthor.setIcon(QMessageBox::Information);
+    messageAuthor.setWindowTitle("Інформація");
+    messageAuthor.setText("Студент групи 473\nПаутов А.А.\nВаріант-10");
+    messageAuthor.exec();
 }
 
 MainWindow::~MainWindow()
@@ -58,31 +64,13 @@ void MainWindow::on_buttonClear_clicked()
     ui->left->clear();
     ui->right->clear();
     ui->step->clear();
-    ui->textEdit->clear();
     ui->tableWidget->clearContents();
     ui->graph->clearGraphs();
-    ui->radioButton_text->setChecked(true);
-    ui->radioButton_table->setChecked(false);
     ui->tableWidget->setVisible(false);
-    ui->textEdit->setVisible(true);
-    ui->checkBox_saveInto->setChecked(false);
-}
-
-void MainWindow::on_checkBox_saveInto_clicked()
-{
-    if(ui->checkBox_saveInto->isChecked())
-    {
-        filename = QFileDialog::getSaveFileName(0, "Зберегти", "", "*.txt");
-        if(filename.isEmpty())
-            ui->checkBox_saveInto->setChecked(false);
-        else
-            statusBar()->showMessage("Файл для збереження результатів: " + filename, 2000);
-    }
 }
 
 void MainWindow::on_buttonCalc_clicked()
 {
-    ui->textEdit->clear();
     ui->tableWidget->clearContents();
     ui->graph->clearGraphs();
 
@@ -92,119 +80,171 @@ void MainWindow::on_buttonCalc_clicked()
 
     if(left > right)
     {
-        QMessageBox msg;
-        msg.setText("Помилка!");
-        msg.setInformativeText("Ліва межа більше правої!");
-        msg.exec();
-
+        QMessageBox message;
+        message.setIcon(QMessageBox::Critical);
+        message.setWindowTitle("Помилка");
+        message.setText("Ліва межа не може бути більше за праву");
+        message.exec();
         return;
     }
+
     if(step <= 0)
     {
-        QMessageBox msg;
-        msg.setText("Помилка!");
-        msg.setInformativeText("Крок не може дорівнювати нулю!");
-        msg.exec();
-
+        QMessageBox message;
+        message.setIcon(QMessageBox::Critical);
+        message.setWindowTitle("Помилка");
+        message.setText("Крок не може бути менше або дорівнювати нулю");
+        message.exec();
         return;
     }
 
-
-        QString res;
-        QString res_file;
-        res.push_back(QString("\tx\t|\tf(x)\n"));
-        res_file.push_back(QString("\t%1%2\t%3\n").arg('x', 4).arg('|', 4).arg("f(x)", 4));
-        QVector<double> xVect, yVect;
-        int row = 0;
-        double sum = 0;
-        for(double i = left; i < right + step; i += step)
-        {
-            double func = f(i);
-
-            if(func >= 0) sum += func*func;
-
-            QString x;
-            xVect.push_back(i);
-            yVect.push_back(func);
-            x.setNum(i, 'g', 3);
-            QString f_x;
-            f_x.setNum(func, 'g', 3);
-            res.push_back(QString("\t%1\t|\t%2\n").arg(i, 4).arg(func, 4));
-            res_file.push_back(QString("\t%1%2\t%3\n").arg(i, 4).arg('|', 4).arg(func, 4));
-            ui->tableWidget->setRowCount(row+1);
-            QTableWidgetItem *itemX = new QTableWidgetItem;
-            itemX->setText(x);
-            QTableWidgetItem *itemFunc = new QTableWidgetItem;
-            itemFunc->setText(f_x);
-            ui->tableWidget->setItem(row, 0, itemX);
-            ui->tableWidget->setItem(row, 1, itemFunc);
-            row++;
-        }
-
-        res.push_back(QString("Сума квадратiв: ") + QString::number(sum));
-        res_file.push_back(QString("Сума квадратiв додатнiх значень: ").arg(sum, 4));
-
-        QMessageBox msgBox;
-        msgBox.setText("Зберегти.");
-        msgBox.setInformativeText("Зберегти файл?");
-        msgBox.setStandardButtons(QMessageBox::Save | QMessageBox::Cancel);
-        msgBox.setDefaultButton(QMessageBox::Save);
-        int ret = msgBox.exec();
-
-        switch (ret) {
-          case QMessageBox::Save:
-
-            filename = QFileDialog::getSaveFileName(0, "Зберегти", "", "*.txt");
-            if(filename.isEmpty()) ui->checkBox_saveInto->setChecked(false);
-
-            else statusBar()->showMessage("Файл для збереження результатів: " + filename, 2000);
-
-            break;
-          case QMessageBox::Cancel:
-              // Cancel was clicked
-              break;
-          default:
-              // should never be reached
-              break;
-        }
-
-        QMessageBox msg;
-        msg.setText("Помилка!");
-        msg.setInformativeText(QString::number(sum));
-        msg.exec();
-
-        res.push_back(QString("Сума квадратiв додатнiх значень: ").arg(sum, 4));
-        res_file.push_back(QString("Сума квадратiв додатнiх значень: ").arg(sum, 4));
-
-        if(!filename.isEmpty() && ui->checkBox_saveInto->isChecked())
-        {
-            QFile file(filename);
-            file.open(QIODevice::Text | QIODevice::WriteOnly);
-            QTextStream data(&file);
-            data << res_file;
-            file.close();
-        }
-        ui->textEdit->setText(res);
-        paintGraph(ui->graph, xVect, yVect);
-}
-
-void MainWindow::on_radioButton_table_clicked()
-{
-    if(ui->radioButton_table->isChecked())
+    QVector<double> xVect, yVect;
+    int row = 0;
+    for(double i = left; i < right + step; i += step)
     {
-        ui->stackedWidget->setCurrentIndex(1);
+        double func = f(i);
+        QString x;
+        xVect.push_back(i);
+        yVect.push_back(func);
+        x.setNum(i, 'g', 3);
+        QString f_x;
+        f_x.setNum(func, 'g', 3);
+        ui->tableWidget->setRowCount(row+1);
+        QTableWidgetItem *itemX = new QTableWidgetItem;
+        itemX->setText(x);
+        QTableWidgetItem *itemFunc = new QTableWidgetItem;
+        itemFunc->setText(f_x);
+        ui->tableWidget->setItem(row, 0, itemX);
+        ui->tableWidget->setItem(row, 1, itemFunc);
+        row++;
     }
-}
 
-void MainWindow::on_radioButton_text_clicked()
-{
-    if(ui->radioButton_text->isChecked())
-    {
-        ui->stackedWidget->setCurrentIndex(0);
-    }
+    paintGraph(ui->graph, xVect, yVect);
 }
 
 double MainWindow::f(double x)
 {
-    return sin(abs(3*x))+cos(x);
+    return 2 * sin(fabs(2 * x)) * cos(2 * x);
+}
+
+void MainWindow::on_tableWidget_customContextMenuRequested(const QPoint &pos)
+{
+    // Создание меню
+    QMenu contextTableMenu;
+    contextTableMenu.addAction(ui->actionTab);
+    contextTableMenu.addSeparator();
+    contextTableMenu.addAction(ui->actionClear);
+
+    QPoint globalPos;
+
+    globalPos = ui->tableWidget->mapToGlobal(pos);
+
+    contextTableMenu.exec(globalPos);
+}
+
+void MainWindow::on_actionExit_triggered()
+{
+    exit(0);
+}
+
+void MainWindow::on_actionTab_triggered()
+{
+    on_buttonCalc_clicked();
+}
+
+void MainWindow::on_pushButtonCheck_clicked()
+{
+    double left = ui->left->text().toDouble();
+    double right = ui->right->text().toDouble();
+    double step = ui->step->text().toDouble();
+
+    if(left > right)
+    {
+        QMessageBox message;
+        message.setIcon(QMessageBox::Critical);
+        message.setWindowTitle("Помилка");
+        message.setText("Ліва межа не може бути більше за праву");
+        message.exec();
+        return;
+    }
+
+    if(step <= 0)
+    {
+        QMessageBox message;
+        message.setIcon(QMessageBox::Critical);
+        message.setWindowTitle("Помилка");
+        message.setText("Крок не може бути менше або дорівнювати нулю");
+        message.exec();
+        return;
+    }
+}
+
+// Збереження результатів у файл
+void MainWindow::on_pushButtonSave_clicked()
+{
+    // Перевірка на наявність результатів
+    if(sumTask2.isEmpty())
+    {
+        QMessageBox messageError;
+        messageError.setIcon(QMessageBox::Critical);
+        messageError.setWindowTitle("Помилка");
+        messageError.setText("Відсутні результати обчислень!");
+        messageError.exec();
+        return;
+    }
+    // Вибір файлу для збереження результатів
+    filename = QFileDialog::getSaveFileName(0, "Зберегти", "", "*.txt");
+    // Перевірка вибору файлу
+    if(filename.isEmpty())
+    {
+        // Вивести повідомлення, якщо файл не вибраний
+        QMessageBox messageError;
+        messageError.setIcon(QMessageBox::Critical);
+        messageError.setWindowTitle("Помилка");
+        messageError.setText("Виберіть файл для збереження!");
+        messageError.exec();
+        return;
+    }
+    else
+    {
+        // Показати який файл вибраний для збереження
+        statusBar()->showMessage("Файл для збереження результатів: " + filename, 1000);
+
+        // Створення файлу
+        QFile file(filename);
+        file.open(QIODevice::Text | QIODevice::WriteOnly);
+        // Запис у файл
+        QTextStream data(&file);
+        data << sumTask2;
+        file.close();
+
+        statusBar()->showMessage("Результати збереженні в файл", 1000);
+    }
+}
+
+void MainWindow::on_pushButtonSum_clicked()
+{
+    double left = ui->left->text().toDouble();
+    double right = ui->right->text().toDouble();
+    double step = ui->step->text().toDouble();
+
+    int count = 0;
+    // Сума кубів додатніх значень
+    for(double i = left; i < right + step; i += step)
+    {
+        double func = f(i);
+        // Перевірка значення
+        if(func < -3 || func > 0.4)
+            count++;
+    }
+
+    sumTask2 = QString("Количество: %1").arg(count);
+
+    // Вивід результату
+    statusBar()->showMessage(sumTask2, 1000);
+}
+
+void MainWindow::on_actionClear_triggered()
+{
+    on_buttonClear_clicked();
 }
